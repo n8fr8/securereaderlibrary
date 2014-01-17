@@ -60,7 +60,7 @@ public class SocialReader implements ICacheWordSubscriber
 {
 	public static final String LOGTAG = "SocialReader";
 
-	public static final String CHAT_ROOM_NAME = "Courier_Chat";
+	//public static final String CHAT_ROOM_NAME = "Courier_Chat";
 	
 	public static final String CONTENT_SHARING_MIME_TYPE = "application/x-bigbuffalo-bundle";
 	public static final String CONTENT_SHARING_EXTENSION = "bbb";
@@ -95,6 +95,12 @@ public class SocialReader implements ICacheWordSubscriber
 	public static final int DEFAULT_NUM_FEED_ITEMS = 20;
 
 	public long defaultFeedId = -1;
+	public final int feedRefreshAge;
+	public final int expirationCheckFrequency;
+	public final int opmlCheckFrequency;
+	public final String opmlUrl;
+	
+	/*
 	public static final String BIG_BUFFALO_FEED_URL = "http://bigbuffalo.com/feed/";
 	public static final String OPML_URL = "http://securereader.guardianproject.info/opml/opml.php"; // Needs to have lang=en_US or fa_IR or bo or bo_CN or zh_CN
 	public static final String APP_FEED_URL = "http://securereader.guardianproject.info/swfeed/swfeed.php";
@@ -104,7 +110,7 @@ public class SocialReader implements ICacheWordSubscriber
 	public final static long FEED_REFRESH_AGE = 300000; // 5 minutes
 	public final static long OPML_CHECK_FREQUENCY = 43200000; // .5 day
 	public final static long EXPIRATION_CHECK_FREQUENCY = 43200000; // .5 days
-	
+	*/
 
 	// Constant to use when passing an item to be shared to the
 	// securebluetoothsender as an extra in the intent
@@ -125,6 +131,27 @@ public class SocialReader implements ICacheWordSubscriber
 	public static final int NOT_ONLINE_NO_WIFI = -2;
 	public static final int NOT_ONLINE_NO_WIFI_OR_NETWORK = -3;
 
+	private SocialReader(Context _context) {
+		
+		this.applicationContext = _context;
+		
+		feedRefreshAge = applicationContext.getResources().getInteger(R.integer.feed_refresh_age);
+		expirationCheckFrequency = applicationContext.getResources().getInteger(R.integer.expiration_check_frequency);
+		opmlCheckFrequency = applicationContext.getResources().getInteger(R.integer.opml_check_frequency);
+		opmlUrl = applicationContext.getResources().getString(R.string.opml_url);
+		
+		this.settings = new Settings(applicationContext);
+		this.cacheWord = new CacheWordHandler(applicationContext, this);
+		this.oc = new OrbotHelper(applicationContext);
+	}	
+	
+    private static SocialReader socialReader = null;
+    public static SocialReader getInstance(Context _context) {
+    	if (socialReader == null) {
+    		socialReader = new SocialReader(_context);
+    	}
+    	return socialReader;
+    }
 
 	// This Timer and TimerHandler are used by the SyncService
 	Timer periodicTimer;
@@ -192,7 +219,7 @@ public class SocialReader implements ICacheWordSubscriber
     	            	timerHandler.sendEmptyMessage(0);
     	            }
     	        };
-    	        periodicTimer.schedule(periodicTask, FEED_REFRESH_AGE, FEED_REFRESH_AGE);
+    	        periodicTimer.schedule(periodicTask, feedRefreshAge, feedRefreshAge);
     		}
 
     		isConnected = true;
@@ -212,21 +239,6 @@ public class SocialReader implements ICacheWordSubscriber
         	isConnected = false;
         }
     };
-
-    private static SocialReader socialReader = null;
-    public static SocialReader getInstance(Context _context) {
-    	if (socialReader == null) {
-    		socialReader = new SocialReader(_context);
-    	}
-    	return socialReader;
-    }
-    
-	private SocialReader(Context _context) {
-		this.applicationContext = _context;
-		this.settings = new Settings(applicationContext);
-		this.cacheWord = new CacheWordHandler(applicationContext, this);
-		this.oc = new OrbotHelper(applicationContext);
-	}
 
 	private boolean initialized = false;
 	public void initialize() {
@@ -305,7 +317,7 @@ public class SocialReader implements ICacheWordSubscriber
 	private void expireOldContent() {
 		Log.v(LOGTAG,"expireOldContent");
 		if (settings.articleExpiration() != Settings.ArticleExpiration.Never) {
-			if (settings.lastItemExpirationCheckTime() < System.currentTimeMillis() - EXPIRATION_CHECK_FREQUENCY) {
+			if (settings.lastItemExpirationCheckTime() < System.currentTimeMillis() - expirationCheckFrequency) {
 				Log.v(LOGTAG,"Checking Article Expirations");
 				Date expirationDate = new Date(System.currentTimeMillis() - settings.articleExpirationMillis());
 				databaseAdapter.deleteExpiredItems(expirationDate);
@@ -319,19 +331,19 @@ public class SocialReader implements ICacheWordSubscriber
 		Log.v(LOGTAG,"checkOPML");
 
 		UiLanguage lang = settings.uiLanguage();
-		String opmlUrl = OPML_URL + "?lang=";
+		String finalOpmlUrl = opmlUrl + "?lang=";
 		if (lang == UiLanguage.Farsi) {
-			opmlUrl = opmlUrl + "fa_IR";
+			finalOpmlUrl = opmlUrl + "fa_IR";
 		} else if (lang == UiLanguage.English) {
-			opmlUrl = opmlUrl + "en_US_BO";
+			finalOpmlUrl = opmlUrl + "en_US_BO";
 		} else if (lang == UiLanguage.Tibetan) {
-			opmlUrl = opmlUrl + "bo_CN";
+			finalOpmlUrl = opmlUrl + "bo_CN";
 		} else if (lang == UiLanguage.Chinese) {
-			opmlUrl = opmlUrl + "en_US_BO";
+			finalOpmlUrl = opmlUrl + "en_US_BO";
 		}
-		Log.v(LOGTAG, "OPML Feed Url: " + opmlUrl);
+		Log.v(LOGTAG, "OPML Feed Url: " + finalOpmlUrl);
 		
-		if (isOnline() == ONLINE && settings.lastOPMLCheckTime() < System.currentTimeMillis() - OPML_CHECK_FREQUENCY) {
+		if (isOnline() == ONLINE && settings.lastOPMLCheckTime() < System.currentTimeMillis() - opmlCheckFrequency) {
 			OPMLParser oParser = new OPMLParser(SocialReader.this, opmlUrl,
 				new OPMLParser.OPMLParserListener() {
 					@Override
@@ -756,15 +768,20 @@ public class SocialReader implements ICacheWordSubscriber
 		databaseAdapter = new DatabaseAdapter(cacheWord, applicationContext);
 
 		if (databaseAdapter.getAllFeeds().size() == 0) {
+			
+			// How come I can't put an array of objects in the XML?
+			// You can, sort of: http://stackoverflow.com/questions/4326037/android-resource-array-of-arrays
+			String[] builtInFeedNames = applicationContext.getResources().getStringArray(R.array.built_in_feed_names);
+			String[] builtInFeedUrls = applicationContext.getResources().getStringArray(R.array.built_in_feed_urls);
+			
+			if (builtInFeedNames.length == builtInFeedUrls.length) {
+				for (int i = 0; i < builtInFeedNames.length; i++) {
+					Feed newFeed = new Feed(builtInFeedNames[i], builtInFeedUrls[i]);
+					newFeed.setSubscribed(true);
+					databaseAdapter.addOrUpdateFeed(newFeed);
+				}
+			}
 						
-			Feed otherNewFeed = new Feed(applicationContext.getString(R.string.apps_feed_name), APP_FEED_URL);
-			otherNewFeed.setSubscribed(true);
-			databaseAdapter.addOrUpdateFeed(otherNewFeed);
-			
-			Feed thirdNewFeed = new Feed(applicationContext.getString(R.string.epubs_feed_name), EPUB_FEED_URL);
-			thirdNewFeed.setSubscribed(true);
-			databaseAdapter.addOrUpdateFeed(thirdNewFeed);
-			
 			loadOPMLFile();
 		}
 
@@ -878,7 +895,7 @@ public class SocialReader implements ICacheWordSubscriber
 	 */
 	public boolean shouldRefresh(Feed feed)
 	{
-		long refreshDate = new Date().getTime() - FEED_REFRESH_AGE;
+		long refreshDate = new Date().getTime() - feedRefreshAge;
 
 		Log.v(LOGTAG, "Feed Databae Id " + feed.getDatabaseId());
 		feed = databaseAdapter.fillFeedObject(feed);
