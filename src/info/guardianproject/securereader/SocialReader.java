@@ -19,6 +19,7 @@ import info.guardianproject.iocipher.FileOutputStream;
 import info.guardianproject.iocipher.VirtualFileSystem;
 import info.guardianproject.onionkit.ui.OrbotHelper;
 
+import info.guardianproject.securereader.HTMLRSSFeedFinder.RSSFeed;
 import info.guardianproject.securereader.MediaDownloader.MediaDownloaderCallback;
 import info.guardianproject.securereader.Settings.UiLanguage;
 import info.guardianproject.securereader.SyncServiceFeedFetcher.SyncServiceFeedFetchedCallback;
@@ -324,6 +325,32 @@ public class SocialReader implements ICacheWordSubscriber
 			}
 		} else {
 			Log.v(LOGTAG,"Settings set to never expire");
+		}
+	}
+	
+	public void checkForRSSFeed(String url) {
+		if (isOnline() == ONLINE) {
+			HTMLRSSFeedFinder htmlParser = new HTMLRSSFeedFinder(SocialReader.this, url,
+				new HTMLRSSFeedFinder.HTMLRSSFeedFinderListener() {
+					@Override
+					public void feedFinderComplete(ArrayList<RSSFeed> rssFeeds) {
+						Log.v(LOGTAG,"Finished Parsing OPML Feed");
+						if (rssFeeds != null) {
+							for (int i = 0; i < rssFeeds.size(); i++) {
+								Feed newFeed = new Feed(rssFeeds.get(i).title, rssFeeds.get(i).href);
+								newFeed.setSubscribed(true);
+								databaseAdapter.addOrUpdateFeed(newFeed);
+								Log.v(LOGTAG,"May have added: " + newFeed.getTitle() + " " + newFeed.getFeedURL());
+							}
+						} else {
+							Log.e(LOGTAG,"Received null after OPML Parsed");
+						}	
+					}
+				}
+			);
+		} else {
+			// Not online
+			Log.v(LOGTAG, "Can't check feed, not online");
 		}
 	}
 
