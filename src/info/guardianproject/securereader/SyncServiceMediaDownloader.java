@@ -157,6 +157,7 @@ public class SyncServiceMediaDownloader implements Runnable
 						}
 					}
 				}
+				SocialReader.getInstance(syncService.getApplicationContext()).getStoreBitmapDimensions(mediaContent);
 			}
 			catch (ClientProtocolException e)
 			{
