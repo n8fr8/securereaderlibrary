@@ -24,6 +24,7 @@ import info.guardianproject.securereader.MediaDownloader.MediaDownloaderCallback
 import info.guardianproject.securereader.Settings.UiLanguage;
 import info.guardianproject.securereader.SyncServiceFeedFetcher.SyncServiceFeedFetchedCallback;
 
+import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -43,6 +44,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
 import android.content.res.Resources;
+import android.graphics.BitmapFactory;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.net.Uri;
@@ -1431,11 +1433,21 @@ public class SocialReader implements ICacheWordSubscriber
 	}
 	*/
 
+	public boolean isMediaContentLoaded(MediaContent mc)
+	{
+		return loadMediaContent(mc, null, false, false);
+	}
+	
 	public boolean loadMediaContent(MediaContent mc, MediaDownloaderCallback mdc) {
 		return loadMediaContent(mc, mdc, false);
 	}
 
 	public boolean loadMediaContent(MediaContent mc, MediaDownloaderCallback mdc, boolean forceBitwiseDownload)
+	{
+		return loadMediaContent(mc, mdc, true, forceBitwiseDownload);
+	}
+	
+	public boolean loadMediaContent(MediaContent mc, MediaDownloaderCallback mdc, boolean download, boolean forceBitwiseDownload)
 	{
 		Log.v(LOGTAG, "loadImageMediaContent: " + mc.getUrl() + " " + mc.getType());
 		
@@ -1448,19 +1460,15 @@ public class SocialReader implements ICacheWordSubscriber
 			if (possibleFile.exists())
 			{
 				Log.v(LOGTAG, "Already downloaded: " + possibleFile.getAbsolutePath());
+				if (mdc != null)
 				mdc.mediaDownloadedNonVFS(possibleFile);
 				return true;
 			}
-			else if (forceBitwiseDownload && isOnline() == ONLINE)
+			else if (download && forceBitwiseDownload && isOnline() == ONLINE)
 			//else if ((settings.syncMode() != Settings.SyncMode.BitWise || forceBitwiseDownload) && isOnline() == ONLINE)
 			// only want to download this content type if they click it so...
 			{
 				Log.v(LOGTAG, "File doesn't exist, downloading");
-	
-				if (forceBitwiseDownload)
-				{
-					mdc = new DownloadsNotifierMediaDownloaderCallback(mc.getItemDatabaseId(), mdc);
-				}
 	
 				NonVFSMediaDownloader mediaDownloader = new NonVFSMediaDownloader(this,possibleFile);
 				mediaDownloader.setMediaDownloaderCallback(new NonVFSMediaDownloader.MediaDownloaderCallback() {
@@ -1485,17 +1493,13 @@ public class SocialReader implements ICacheWordSubscriber
 			if (possibleFile.exists())
 			{
 				Log.v(LOGTAG, "Already downloaded: " + possibleFile.getAbsolutePath());
+				if (mdc != null)
 				mdc.mediaDownloaded(possibleFile);
 				return true;
 			}
-			else if (forceBitwiseDownload && isOnline() == ONLINE)
+			else if (download && forceBitwiseDownload && isOnline() == ONLINE)
 			{
 				Log.v(LOGTAG, "File doesn't exist, downloading");
-	
-				if (forceBitwiseDownload)
-				{
-					mdc = new DownloadsNotifierMediaDownloaderCallback(mc.getItemDatabaseId(), mdc);
-				}
 	
 				MediaDownloader mediaDownloader = new MediaDownloader(this);
 				mediaDownloader.setMediaDownloaderCallback(mdc);
@@ -1516,17 +1520,13 @@ public class SocialReader implements ICacheWordSubscriber
 			if (possibleFile.exists())
 			{
 				Log.v(LOGTAG, "Already downloaded: " + possibleFile.getAbsolutePath());
+				if (mdc != null)
 				mdc.mediaDownloaded(possibleFile);
 				return true;
 			}
-			else if ((settings.syncMode() != Settings.SyncMode.BitWise || forceBitwiseDownload) && isOnline() == ONLINE)
+			else if (download && (settings.syncMode() != Settings.SyncMode.BitWise || forceBitwiseDownload) && isOnline() == ONLINE)
 			{
 				Log.v(LOGTAG, "File doesn't exist, downloading");
-	
-				if (forceBitwiseDownload)
-				{
-					mdc = new DownloadsNotifierMediaDownloaderCallback(mc.getItemDatabaseId(), mdc);
-				}
 	
 				MediaDownloader mediaDownloader = new MediaDownloader(this);
 				mediaDownloader.setMediaDownloaderCallback(mdc);
@@ -1543,35 +1543,6 @@ public class SocialReader implements ICacheWordSubscriber
 		} else {
 			Log.v(LOGTAG,"Not a media type we support");
 			return false;
-		}
-	}
-
-
-	private class DownloadsNotifierMediaDownloaderCallback implements MediaDownloaderCallback
-	{
-		private final MediaDownloaderCallback mWrapped;
-		private final long mItemId;
-
-		public DownloadsNotifierMediaDownloaderCallback(long itemId, MediaDownloaderCallback wrapped)
-		{
-			mItemId = itemId;
-			mWrapped = wrapped;
-			//DownloadsAdapter.downloading(mItemId);
-		}
-
-		@Override
-		public void mediaDownloaded(File mediaFile)
-		{
-			//DownloadsAdapter.downloaded(mItemId);
-			if (mWrapped != null)
-				mWrapped.mediaDownloaded(mediaFile);
-		}
-
-		@Override
-		public void mediaDownloadedNonVFS(java.io.File mediaFile) {
-			//DownloadsAdapter.downloaded(mItemId);
-			if (mWrapped != null)
-				mWrapped.mediaDownloadedNonVFS(mediaFile);
 		}
 	}
 
@@ -1795,4 +1766,32 @@ public class SocialReader implements ICacheWordSubscriber
     	Log.v(LOGTAG,"onCacheWordOpened");
         initialize();
     }
+    
+	public void getStoreBitmapDimensions(MediaContent mediaContent)
+	{
+		try
+		{
+			File mediaFile = new File(getFileSystemDir(), SocialReader.MEDIA_CONTENT_FILE_PREFIX + mediaContent.getDatabaseId());
+
+			BitmapFactory.Options o = new BitmapFactory.Options();
+			o.inJustDecodeBounds = true;
+			BufferedInputStream bis = new BufferedInputStream(new FileInputStream(mediaFile));
+			BitmapFactory.decodeStream(bis, null, o);
+			bis.close();
+			if (o.outWidth > 0 && o.outHeight > 0)
+			{
+				mediaContent.setWidth(o.outWidth);
+				mediaContent.setHeight(o.outHeight);
+				databaseAdapter.updateItemMedia(mediaContent);
+			}
+		}
+		catch (FileNotFoundException e)
+		{
+			e.printStackTrace();
+		}
+		catch (IOException e)
+		{
+			e.printStackTrace();
+		}
+	}
 }
