@@ -1122,7 +1122,7 @@ public class DatabaseAdapter
 				String source = queryCursor.getString(sourceColumn);
 				String link = queryCursor.getString(linkColumn);
 	
-				returnItem = new Item(guid, title, publishDate, source, description, Feed.DEFAULT_DATABASE_ID);
+				returnItem = new Item(guid, title, publishDate, source, description, feedId);
 				returnItem.setDatabaseId(id);
 				returnItem.setAuthor(author);
 				returnItem.setCategory(category);
