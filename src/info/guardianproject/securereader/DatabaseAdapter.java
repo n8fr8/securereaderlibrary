@@ -4,6 +4,7 @@ import info.guardianproject.cacheword.CacheWordHandler;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Date;
 import java.util.Locale;
 
@@ -14,6 +15,10 @@ import android.content.Context;
 import android.database.Cursor;
 import android.util.Log;
 
+import com.google.common.base.Function;
+import com.google.common.base.Joiner;
+import com.google.common.collect.Iterables;
+import com.google.common.collect.Lists;
 import com.tinymission.rss.Feed;
 import com.tinymission.rss.Item;
 import com.tinymission.rss.MediaContent;
@@ -1516,12 +1521,16 @@ public class DatabaseAdapter
 	{
 		if (LOGGING)
 			Log.v(LOGTAG,"addOrUpdateItemMedia");
+		
 		for (MediaContent itemMedia : itemMediaList)
 		{
 			addOrUpdateItemMedia(item, itemMedia);
 			if (LOGGING)
 				Log.v(LOGTAG,"itemMedia added or updated: " + itemMedia.getDatabaseId());
 		}
+		
+		// Delete stale entries (do this after addOrUpdateItemMedia above, to ensure all have valid id:s)
+		deleteOldItemMedia(item, itemMediaList);
 	}
 
 	public long addOrUpdateItemMedia(Item item, MediaContent itemMedia)
@@ -1922,6 +1931,27 @@ public class DatabaseAdapter
 		{
 			e.printStackTrace();
 		}
+	}
+	
+	private long deleteOldItemMedia(Item item, ArrayList<MediaContent> itemMediaList)
+	{
+		long numDeleted = 0;
+		try
+		{
+			String databaseIds = Joiner.on(",").join(Iterables.transform(itemMediaList, new Function<MediaContent, String>()
+					{
+				@Override
+				public String apply(MediaContent mc) {
+					return Long.toString(mc.getDatabaseId());
+				}
+			}));
+			numDeleted = db.delete(DatabaseHelper.ITEM_MEDIA_TABLE, DatabaseHelper.ITEM_MEDIA_ITEM_ID + "=? AND " + DatabaseHelper.ITEM_MEDIA_TABLE_COLUMN_ID + " NOT IN (" + databaseIds + ")", new String[] { "" + item.getDatabaseId() });
+		}
+		catch (SQLException e)
+		{
+			e.printStackTrace();
+		}
+		return numDeleted;
 	}
 	
 	public void deleteAll()
