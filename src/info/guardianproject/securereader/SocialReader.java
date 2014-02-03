@@ -767,7 +767,8 @@ public class SocialReader implements ICacheWordSubscriber
 		    }
 
 		    protected void onPostExecute(Feed result) {
-		    	cachedSubscribedFeedItems = result;
+		    	if (result != null)
+		    		cachedSubscribedFeedItems = result;
 		    }			
 		}.execute();
 
