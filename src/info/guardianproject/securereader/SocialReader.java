@@ -13,6 +13,7 @@ package info.guardianproject.securereader;
 import info.guardianproject.cacheword.CacheWordHandler;
 import info.guardianproject.cacheword.ICacheWordSubscriber;
 import info.guardianproject.cacheword.IOCipherMountHelper;
+import info.guardianproject.cacheword.PassphraseSecrets;
 import info.guardianproject.iocipher.File;
 import info.guardianproject.iocipher.FileInputStream;
 import info.guardianproject.iocipher.FileOutputStream;
@@ -30,6 +31,7 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.ObjectOutputStream;
+import java.security.GeneralSecurityException;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.Iterator;
@@ -61,6 +63,12 @@ import com.tinymission.rss.MediaContent;
 
 public class SocialReader implements ICacheWordSubscriber
 {
+	public interface SocialReaderLockListener
+	{
+		void onLocked();
+		void onUnlocked();
+	}
+	
 	public static final String LOGTAG = "SocialReader";
 
 	//public static final String CHAT_ROOM_NAME = "Courier_Chat";
@@ -128,7 +136,8 @@ public class SocialReader implements ICacheWordSubscriber
 	Settings settings;
 	SyncServiceConnection syncServiceConnection;
 	OrbotHelper oc;
-
+	SocialReaderLockListener lockListener;
+	
 	public static final int ONLINE = 1;
 	public static final int NOT_ONLINE_NO_TOR = -1;
 	public static final int NOT_ONLINE_NO_WIFI = -2;
@@ -190,6 +199,11 @@ public class SocialReader implements ICacheWordSubscriber
     	}
     }
 
+    public void setLockListener(SocialReaderLockListener lockListener)
+    {
+    	this.lockListener = lockListener;
+    }
+    
 	class SyncServiceConnection implements ServiceConnection {
 
 		public boolean isConnected = false;
@@ -262,6 +276,8 @@ public class SocialReader implements ICacheWordSubscriber
             applicationContext.bindService(new Intent(applicationContext, SyncService.class), syncServiceConnection, Context.BIND_AUTO_CREATE);
 
             initialized = true;
+            if (lockListener != null)
+            	lockListener.onUnlocked();
 
 	    } else {
 	    	Log.v(LOGTAG,"Already initialized!");
@@ -271,6 +287,7 @@ public class SocialReader implements ICacheWordSubscriber
 	public void uninitialize() {
 		if (syncServiceConnection != null && syncServiceConnection.isConnected) {
 			applicationContext.unbindService(syncServiceConnection);
+			syncServiceConnection.isConnected = false;
 		}
 
 		// If we aren't going to do any background syncing, stop the service
@@ -287,7 +304,9 @@ public class SocialReader implements ICacheWordSubscriber
 	        	vfs.unmount();
 	        }
 		}
-		initialized = false;			
+		initialized = false;
+        if (lockListener != null)
+        	lockListener.onLocked();
 	}
 	
 	private void loadOPMLFile() {
@@ -408,7 +427,6 @@ public class SocialReader implements ICacheWordSubscriber
 	public void onResume() {
 		Log.v(LOGTAG, "SocialReader onResume");
 		cacheWord.connectToService();
-
         appStatus = SocialReader.APP_IN_FOREGROUND;
 	}
 	
@@ -757,7 +775,14 @@ public class SocialReader implements ICacheWordSubscriber
 			protected Feed doInBackground(Void... nothing) {
 				if (databaseAdapter != null && databaseAdapter.databaseReady())
 				{
-					return databaseAdapter.getSubscribedFeedItems(DEFAULT_NUM_FEED_ITEMS);
+					try
+					{
+						return databaseAdapter.getSubscribedFeedItems(DEFAULT_NUM_FEED_ITEMS);
+					}
+					catch(IllegalStateException e)
+					{
+						e.printStackTrace();
+					}
 				}
 				
 				return null;

@@ -1392,7 +1392,11 @@ public class DatabaseAdapter
 		catch (SQLException e)
 		{
 			e.printStackTrace();
-		}		
+		}
+		catch(IllegalStateException e)
+		{
+			e.printStackTrace();
+		}
 		finally
 		{
 			if (queryCursor != null)
