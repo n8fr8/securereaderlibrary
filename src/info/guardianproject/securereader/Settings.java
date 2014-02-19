@@ -35,6 +35,7 @@ public class Settings
 	public static final String KEY_USE_KILL_PASSPHRASE = "use_passphrase";
 	public static final String KEY_KILL_PASSPHRASE = "passphrase";
 	public static final String KEY_CHAT_SECURE_DIALOG_SHOWN = "chat_secure_dialog_shown";
+	public static final String KEY_CHAT_SECURE_INFO_SHOWN = "chat_secure_info_shown";
 	public static final String KEY_USERNAME_PASSWORD_CHAT_REGISTERED = "chat_username_password_registered";
 	public static final String KEY_DOWNLOAD_EPUB_READER_DIALOG_SHOWN = "download_epub_reader_dialog_shown";
 		
@@ -517,6 +518,24 @@ public class Settings
 		mPrefs.edit().putInt(KEY_CHAT_SECURE_DIALOG_SHOWN, numTimes).commit();
 	}
 	
+	/**
+	 * @return number of times we have shown ChatSecure information dialog
+	 * 
+	 */
+	public int chatSecureInfoShown()
+	{
+		return mPrefs.getInt(KEY_CHAT_SECURE_INFO_SHOWN, 0);
+	}
+	
+	/**
+	 * Set number of times we have shown ShatSecure information dialog
+	 * 
+	 */
+	public void setChatSecureInfoShown(int numTimes)
+	{
+		mPrefs.edit().putInt(KEY_CHAT_SECURE_INFO_SHOWN, numTimes).commit();
+	}
+
 	public boolean chatUsernamePasswordSet() {
 		return mPrefs.getBoolean(KEY_USERNAME_PASSWORD_CHAT_REGISTERED, false);
 	}
