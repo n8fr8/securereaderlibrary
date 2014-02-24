@@ -33,7 +33,6 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.ObjectOutputStream;
-import java.security.GeneralSecurityException;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.Iterator;
@@ -114,18 +113,6 @@ public class SocialReader implements ICacheWordSubscriber
 	public final int opmlCheckFrequency;
 	public final String opmlUrl;
 	
-	/*
-	public static final String BIG_BUFFALO_FEED_URL = "http://bigbuffalo.com/feed/";
-	public static final String OPML_URL = "http://securereader.guardianproject.info/opml/opml.php"; // Needs to have lang=en_US or fa_IR or bo or bo_CN or zh_CN
-	public static final String APP_FEED_URL = "http://securereader.guardianproject.info/swfeed/swfeed.php";
-	public static final String EPUB_FEED_URL = "http://securereader.guardianproject.info/opds/opds.php";
-
-	// In Milliseconds
-	public final static long FEED_REFRESH_AGE = 300000; // 5 minutes
-	public final static long OPML_CHECK_FREQUENCY = 43200000; // .5 day
-	public final static long EXPIRATION_CHECK_FREQUENCY = 43200000; // .5 days
-	*/
-
 	// Constant to use when passing an item to be shared to the
 	// securebluetoothsender as an extra in the intent
 	public static final String SHARE_ITEM_ID = "SHARE_ITEM_ID";
@@ -1375,7 +1362,7 @@ public class SocialReader implements ICacheWordSubscriber
 
 	private void deleteApp()
 	{
-		Uri packageURI = Uri.parse("package:info.guardianproject.bigbuffalo");
+		Uri packageURI = Uri.parse("package:" + applicationContext.getPackageName());
 		Intent uninstallIntent = new Intent(Intent.ACTION_DELETE, packageURI);
 		uninstallIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
 		applicationContext.startActivity(uninstallIntent);
