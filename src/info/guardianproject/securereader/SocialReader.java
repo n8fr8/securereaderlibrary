@@ -71,8 +71,6 @@ public class SocialReader implements ICacheWordSubscriber
 	
 	public static final String LOGTAG = "SocialReader";
 
-	//public static final String CHAT_ROOM_NAME = "Courier_Chat";
-	
 	public static final String CONTENT_SHARING_MIME_TYPE = "application/x-bigbuffalo-bundle";
 	public static final String CONTENT_SHARING_EXTENSION = "bbb";
 	public static final String CONTENT_ITEM_EXTENSION = "bbi";
