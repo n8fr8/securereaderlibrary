@@ -18,7 +18,7 @@ public class Settings
 	public static final String KEY_LAST_ITEM_EXPIRATION_CHECK_TIME = "last_item_expiration_check_time";
 	public static final String KEY_LAST_OPML_CHECK_TIME = "last_opml_check_time";
 	public static final String KEY_REQUIRE_TOR = "require_tor";
-	public static final String KEY_LAUNCH_REQUIRE_PASSPHRASE = "launch_require_passphrase";
+	public static final String KEY_PASSPHRASE_TIMEOUT = "passphrase_timeout";
 	public static final String KEY_CONTENT_FONT_SIZE_ADJUSTMENT = "content_font_size_adjustment";
 	public static final String KEY_WIPE_APP = "wipe_app";
 	public static final String KEY_ARTICLE_EXPIRATION = "article_expiration";
@@ -89,21 +89,21 @@ public class Settings
 	}
 
 	/**
-	 * @return Gets whether or not a passphrase is required to launch the app
+	 * @return Gets the timeout before lock screen is shown
 	 * 
 	 */
-	public boolean launchRequirePassphrase()
+	public int passphraseTimeout()
 	{
-		return mPrefs.getBoolean(KEY_LAUNCH_REQUIRE_PASSPHRASE, true);
+		return mPrefs.getInt(KEY_PASSPHRASE_TIMEOUT, 2);
 	}
 
 	/**
-	 * @return Sets whether or not a passphrase is required to launch the app
+	 * @return Sets timeout before lock screen is shown
 	 * 
 	 */
-	public void setLaunchRequirePassphrase(boolean require)
+	public void setPassphraseTimeout(int seconds)
 	{
-		mPrefs.edit().putBoolean(KEY_LAUNCH_REQUIRE_PASSPHRASE, require).commit();
+		mPrefs.edit().putInt(KEY_PASSPHRASE_TIMEOUT, seconds).commit();
 	}
 
 	/**

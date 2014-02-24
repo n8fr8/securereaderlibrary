@@ -11,6 +11,8 @@ package info.guardianproject.securereader;
 
 //import info.guardianproject.bigbuffalo.adapters.DownloadsAdapter;
 import info.guardianproject.cacheword.CacheWordHandler;
+import info.guardianproject.cacheword.CacheWordSettings;
+import info.guardianproject.cacheword.Constants;
 import info.guardianproject.cacheword.ICacheWordSubscriber;
 import info.guardianproject.cacheword.IOCipherMountHelper;
 import info.guardianproject.cacheword.PassphraseSecrets;
@@ -41,9 +43,11 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
 import android.app.Activity;
+import android.content.BroadcastReceiver;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.ServiceConnection;
 import android.content.res.Resources;
 import android.graphics.BitmapFactory;
@@ -55,6 +59,7 @@ import android.os.Environment;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.Message;
+import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
 
 import com.tinymission.rss.Feed;
@@ -130,6 +135,7 @@ public class SocialReader implements ICacheWordSubscriber
 	public Context applicationContext;
 	DatabaseAdapter databaseAdapter;
 	CacheWordHandler cacheWord;
+	CacheWordSettings cacheWordSettings;
 	public SecureSettings ssettings;
 	Settings settings;
 	SyncServiceConnection syncServiceConnection;
@@ -151,8 +157,21 @@ public class SocialReader implements ICacheWordSubscriber
 		opmlUrl = applicationContext.getResources().getString(R.string.opml_url);
 		
 		this.settings = new Settings(applicationContext);
-		this.cacheWord = new CacheWordHandler(applicationContext, this);
+		this.cacheWordSettings = new CacheWordSettings(applicationContext);
+		this.cacheWord = new CacheWordHandler(applicationContext, this, cacheWordSettings);
 		this.oc = new OrbotHelper(applicationContext);
+        LocalBroadcastManager.getInstance(_context).registerReceiver(
+        		new BroadcastReceiver() {
+        	        @Override
+        	        public void onReceive(Context context, Intent intent) {
+        	            if (intent.getAction().equals(Constants.INTENT_NEW_SECRETS)) {
+        	            	// Locked because of timeout
+        	            	if (initialized && cacheWord.getCachedSecrets() == null)
+        	            		SocialReader.this.onCacheWordLocked();
+        	            }
+        	            }
+        	        },
+                new IntentFilter(Constants.INTENT_NEW_SECRETS));
 	}	
 	
     private static SocialReader socialReader = null;
@@ -426,6 +445,11 @@ public class SocialReader implements ICacheWordSubscriber
 		Log.v(LOGTAG, "SocialReader onResume");
 		cacheWord.connectToService();
         appStatus = SocialReader.APP_IN_FOREGROUND;
+	}
+	
+	public void setCacheWordTimeout(int minutes)
+	{
+		cacheWordSettings.setTimeoutMinutes(minutes);
 	}
 	
 	public boolean isTorOnline() 
