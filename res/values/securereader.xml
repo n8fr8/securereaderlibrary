@@ -36,5 +36,8 @@
 	
 	<!-- EXPIRATION_CHECK_FREQUENCY = 43200000; // .5 days -->
 	<integer name="expiration_check_frequency">43200000</integer>
+	
+	<!-- XMLRPC_ENDPOINT -->
+	<string name="xmlrpc_endpoint">http://securereader.guardianproject.info/xmlrpc.php</string>
 	    
 </resources>

@@ -88,7 +88,7 @@ public class XMLRPCPublisher extends AsyncTask<Item, Integer, Item>
 					// acxu.createUser
 					ArrayList arguments = new ArrayList();
 					arguments.add(nickname);
-					XmlRpcClient xpc = new XmlRpcClient(new URL(SocialReporter.XMLRPC_ENDPOINT));
+					XmlRpcClient xpc = new XmlRpcClient(new URL(socialReporter.xmlrpcEndpoint));
 					String result = (String) xpc.invoke("acxu.createUser", arguments);
 					Log.v(LOGTAG,"From wordpress: " + result);
 					String[] sresult = result.split(" ");
@@ -108,8 +108,8 @@ public class XMLRPCPublisher extends AsyncTask<Item, Integer, Item>
 					//Log.v(LOGTAG, "Logging into Wordpress: " + SocialReporter.XMLRPC_USERNAME + '@' + SocialReporter.XMLRPC_ENDPOINT);
 					//Wordpress wordpress = new Wordpress(SocialReporter.XMLRPC_USERNAME, SocialReporter.XMLRPC_PASSWORD, SocialReporter.XMLRPC_ENDPOINT);
 	
-					Log.v(LOGTAG, "Logging into Wordpress: " + xmlRPCUsername + '@' + SocialReporter.XMLRPC_ENDPOINT);
-					Wordpress wordpress = new Wordpress(xmlRPCUsername, xmlRPCPassword, SocialReporter.XMLRPC_ENDPOINT);
+					Log.v(LOGTAG, "Logging into XMLRPC Interface: " + xmlRPCUsername + '@' + socialReporter.xmlrpcEndpoint);
+					Wordpress wordpress = new Wordpress(xmlRPCUsername, xmlRPCPassword, socialReporter.xmlrpcEndpoint);
 	
 					Page page = new Page();
 					page.setTitle(item.getTitle());

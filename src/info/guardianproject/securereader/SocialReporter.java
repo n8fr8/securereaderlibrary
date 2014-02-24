@@ -27,17 +27,20 @@ public class SocialReporter
 {
 	public static String LOGTAG = "SocialReporter";
 
-	public static String XMLRPC_ENDPOINT = "http://ec2-23-20-243-244.compute-1.amazonaws.com/wordpress/xmlrpc.php";
-
 	SocialReader socialReader;
 	Context applicationContext;
 	Wordpress wordpress;
 	CacheWordHandler cacheWord;
+	
+	public String xmlrpcEndpoint;
+
 
 	public SocialReporter(SocialReader _socialReader)
 	{
 		socialReader = _socialReader;
 		applicationContext = socialReader.applicationContext;
+		
+		xmlrpcEndpoint = applicationContext.getResources().getString(R.string.xmlrpc_endpoint);
 	}
 
 	public boolean useTor() 
