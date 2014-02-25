@@ -1302,7 +1302,7 @@ public class SocialReader implements ICacheWordSubscriber
 		sendIntent.setDataAndType(Uri.fromFile(sharingFile), CONTENT_SHARING_MIME_TYPE);
 		sendIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
 
-		Log.v(LOGTAG,"Secure Share Intent: " + Uri.parse(SecureShareContentProvider.CONTENT_URI + "item/" + item.getDatabaseId()).toString());
+		Log.v(LOGTAG,"Secure Share Intent: " + sendIntent.getDataString());
 		
 		return sendIntent;
 	}
