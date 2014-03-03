@@ -86,8 +86,9 @@ public class SocialReader implements ICacheWordSubscriber
 	public static final int FULL_APP_WIPE = 100;
 	public static final int DATA_WIPE = 101;
 
+	public final static String PROXY_TYPE = "SOCKS";
 	public final static String PROXY_HOST = "127.0.0.1";
-	public final static int PROXY_HTTP_PORT = 8118; // default for Orbot/Tor
+	public final static int PROXY_PORT = 9050; // default for SOCKS Orbot/Tor
 
 	public final static boolean RESET_DATABASE = false;
 

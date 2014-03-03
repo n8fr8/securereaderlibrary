@@ -66,11 +66,13 @@ public class OPMLParser {
 			@Override
 			protected Void doInBackground(Void... params)
 			{
-				HttpClient httpClient = new StrongHttpsClient(socialReader.applicationContext);
+				StrongHttpsClient httpClient = new StrongHttpsClient(socialReader.applicationContext);
 				if (socialReader.useTor())
 				{
 					Log.v(LOGTAG,"Using Tor for OPML Retrieval");
-					httpClient.getParams().setParameter(ConnRoutePNames.DEFAULT_PROXY, new HttpHost(SocialReader.PROXY_HOST, SocialReader.PROXY_HTTP_PORT));
+					httpClient.useProxy(true, SocialReader.PROXY_TYPE, SocialReader.PROXY_HOST, SocialReader.PROXY_PORT);
+
+					//httpClient.getParams().setParameter(ConnRoutePNames.DEFAULT_PROXY, new HttpHost(SocialReader.PROXY_HOST, SocialReader.PROXY_HTTP_PORT));
 				} else {
 					Log.v(LOGTAG,"NOT Using Tor for OPML Retrieval");
 				}

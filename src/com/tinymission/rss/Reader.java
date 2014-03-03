@@ -136,10 +136,12 @@ public class Reader
 			// URLConnection ucon = new URL(feed.getLink()).openConnection();
 			// InputStream is = ucon.getInputStream();
 
-			HttpClient httpClient = new StrongHttpsClient(socialReader.applicationContext);
+			StrongHttpsClient httpClient = new StrongHttpsClient(socialReader.applicationContext);
 			if (socialReader.useTor())
 			{
-				httpClient.getParams().setParameter(ConnRoutePNames.DEFAULT_PROXY, new HttpHost(SocialReader.PROXY_HOST, SocialReader.PROXY_HTTP_PORT));
+				httpClient.useProxy(true, SocialReader.PROXY_TYPE, SocialReader.PROXY_HOST, SocialReader.PROXY_PORT);
+
+				//httpClient.getParams().setParameter(ConnRoutePNames.DEFAULT_PROXY, new HttpHost(SocialReader.PROXY_HOST, SocialReader.PROXY_HTTP_PORT));
 			}
 
 			if (feed.getFeedURL() != null && !(feed.getFeedURL().isEmpty()))
