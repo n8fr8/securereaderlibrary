@@ -11,6 +11,7 @@ public class Settings
 {
 	private final SharedPreferences mPrefs;
 	private final boolean mIsFirstRun;
+	private final Context context;
 
 	// Use these constants when listening to changes, to see what property has
 	// changed!
@@ -39,8 +40,10 @@ public class Settings
 	public static final String KEY_USERNAME_PASSWORD_CHAT_REGISTERED = "chat_username_password_registered";
 	public static final String KEY_DOWNLOAD_EPUB_READER_DIALOG_SHOWN = "download_epub_reader_dialog_shown";
 		
-	public Settings(Context context)
+	public Settings(Context _context)
 	{
+		context = _context;
+		
 		mPrefs = PreferenceManager.getDefaultSharedPreferences(context);
 		
 		mIsFirstRun = mPrefs.getBoolean("firstrunkey", true);
@@ -76,6 +79,7 @@ public class Settings
 	 */
 	public boolean requireTor()
 	{
+		context.getResources().getBoolean(R.bool.require_tor_default);
 		return mPrefs.getBoolean(KEY_REQUIRE_TOR, false);
 	}
 
