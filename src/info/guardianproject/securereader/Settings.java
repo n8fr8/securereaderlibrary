@@ -79,8 +79,8 @@ public class Settings
 	 */
 	public boolean requireTor()
 	{
-		context.getResources().getBoolean(R.bool.require_tor_default);
-		return mPrefs.getBoolean(KEY_REQUIRE_TOR, false);
+		boolean torRequiredDefault = context.getResources().getBoolean(R.bool.require_tor_default);
+		return mPrefs.getBoolean(KEY_REQUIRE_TOR, torRequiredDefault);
 	}
 
 	/**
