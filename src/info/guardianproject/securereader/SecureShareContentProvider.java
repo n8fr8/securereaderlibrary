@@ -6,29 +6,19 @@ package info.guardianproject.securereader;
 
 import java.io.FileNotFoundException;
 
-import info.guardianproject.iocipher.File;
 import android.content.ContentProvider;
 import android.content.ContentValues;
 import android.content.Context;
 import android.content.UriMatcher;
 import android.database.Cursor;
 import android.net.Uri;
-import android.os.Environment;
 import android.os.ParcelFileDescriptor;
-import android.util.Log;
 
 public class SecureShareContentProvider extends ContentProvider {
 
 	public static final String LOGTAG = "SecureShareContentProvider";
 
-	public static final String AUTHORITY = "info.guardianproject.bigbuffalo.secureshareprovider";
 	public static final int ITEM_ID = 0;
-	public static final Uri CONTENT_URI = Uri.parse("content://" + AUTHORITY + "/");
-	
-	private static final UriMatcher sURIMatcher = new UriMatcher(UriMatcher.NO_MATCH);;
-	static {
-		sURIMatcher.addURI(AUTHORITY, "item/#", ITEM_ID);
-	}
 	
 	@Override
 	public boolean onCreate() {
@@ -65,7 +55,11 @@ public class SecureShareContentProvider extends ContentProvider {
 
 	@Override
 	public String getType(Uri uri) {
-		int match = sURIMatcher.match(uri);
+		// Match any authority. The app decides and restricts the authorities this provider responds to
+		// see http://stackoverflow.com/a/10791144/844882.
+		UriMatcher matcher = new UriMatcher(UriMatcher.NO_MATCH);
+		matcher.addURI(uri.getAuthority(), "item/#", ITEM_ID);
+		int match = matcher.match(uri);
         switch (match)
         {
             case ITEM_ID:
