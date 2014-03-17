@@ -363,7 +363,7 @@ public class Settings
 
 	public enum UiLanguage
 	{
-		English, Farsi, Tibetan, Chinese
+		English, Farsi, Tibetan, Chinese, Ukrainian
 	}
 
 	/**
@@ -386,6 +386,8 @@ public class Settings
 			return UiLanguage.Tibetan;
 		else if (defaultLanguage.equals("zh"))
 			return UiLanguage.Chinese;
+		else if (defaultLanguage.equals("uk"))
+			return UiLanguage.Ukrainian;
 		return UiLanguage.English;
 	}
 
