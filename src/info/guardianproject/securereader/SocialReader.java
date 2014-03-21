@@ -160,6 +160,15 @@ public class SocialReader implements ICacheWordSubscriber
         	            }
         	        },
                 new IntentFilter(Constants.INTENT_NEW_SECRETS));
+        
+        periodicTimer = new Timer();
+        TimerTask periodicTask = new TimerTask() {
+            @Override
+            public void run() {
+            	timerHandler.sendEmptyMessage(0);
+            }
+        };
+        periodicTimer.schedule(periodicTask, feedRefreshAge, feedRefreshAge);
 	}	
 	
     private static SocialReader socialReader = null;
@@ -188,7 +197,7 @@ public class SocialReader implements ICacheWordSubscriber
         }
 	}
 	TimerHandler timerHandler = new TimerHandler();
-
+	
     private SyncService syncService;
     private SyncService.SyncServiceListener syncServiceListener;
 
@@ -233,15 +242,6 @@ public class SocialReader implements ICacheWordSubscriber
     		// Back to the front, check the syncing
     		if (settings.syncFrequency() != Settings.SyncFrequency.Manual) {
     			backgroundSyncSubscribedFeeds();
-
-    	    	periodicTimer = new Timer();
-    	        TimerTask periodicTask = new TimerTask() {
-    	            @Override
-                    public void run() {
-    	            	timerHandler.sendEmptyMessage(0);
-    	            }
-    	        };
-    	        periodicTimer.schedule(periodicTask, feedRefreshAge, feedRefreshAge);
     		}
 
     		isConnected = true;
@@ -314,12 +314,12 @@ public class SocialReader implements ICacheWordSubscriber
         	lockListener.onLocked();
 	}
 	
-	private void loadOPMLFile() {
-		Log.v(LOGTAG,"laodOPMLFile()");
+	public void loadOPMLFile() {
+		Log.v(LOGTAG,"loadOPMLFile()");
 
 		Resources res = applicationContext.getResources();
 		InputStream inputStream = res.openRawResource(R.raw.bigbuffalo_opml);
-
+		
 		OPMLParser oParser = new OPMLParser(inputStream,
 				new OPMLParser.OPMLParserListener() {
 					@Override
@@ -328,7 +328,7 @@ public class SocialReader implements ICacheWordSubscriber
 						if (outlines != null) {
 							for (int i = 0; i < outlines.size(); i++) {
 								OPMLParser.OPMLOutline outlineElement = outlines.get(i);
-								Feed newFeed = new Feed(outlineElement.text, outlineElement.htmlUrl);
+								Feed newFeed = new Feed(outlineElement.text, outlineElement.xmlUrl);
 								newFeed.setSubscribed(true);
 								databaseAdapter.addOrUpdateFeed(newFeed);
 								Log.v(LOGTAG,"May have added: " + newFeed.getTitle() + " " + newFeed.getFeedURL());
@@ -360,7 +360,7 @@ public class SocialReader implements ICacheWordSubscriber
 				new HTMLRSSFeedFinder.HTMLRSSFeedFinderListener() {
 					@Override
 					public void feedFinderComplete(ArrayList<RSSFeed> rssFeeds) {
-						Log.v(LOGTAG,"Finished Parsing OPML Feed");
+						Log.v(LOGTAG,"Finished Parsing HTML File");
 						if (rssFeeds != null) {
 							for (int i = 0; i < rssFeeds.size(); i++) {
 								Feed newFeed = new Feed(rssFeeds.get(i).title, rssFeeds.get(i).href);
@@ -369,7 +369,7 @@ public class SocialReader implements ICacheWordSubscriber
 								Log.v(LOGTAG,"May have added: " + newFeed.getTitle() + " " + newFeed.getFeedURL());
 							}
 						} else {
-							Log.e(LOGTAG,"Received null after OPML Parsed");
+							Log.e(LOGTAG,"Received null after HTML Parsed");
 						}	
 					}
 				}
@@ -386,14 +386,18 @@ public class SocialReader implements ICacheWordSubscriber
 		UiLanguage lang = settings.uiLanguage();
 		String finalOpmlUrl = opmlUrl + "?lang=";
 		if (lang == UiLanguage.Farsi) {
-			finalOpmlUrl = opmlUrl + "fa_IR";
+			finalOpmlUrl = finalOpmlUrl + "fa_IR";
 		} else if (lang == UiLanguage.English) {
-			finalOpmlUrl = opmlUrl + "en_US_BO";
+			finalOpmlUrl = finalOpmlUrl + "en_US";
 		} else if (lang == UiLanguage.Tibetan) {
-			finalOpmlUrl = opmlUrl + "bo_CN";
+			finalOpmlUrl = finalOpmlUrl + "bo_CN";
 		} else if (lang == UiLanguage.Chinese) {
-			finalOpmlUrl = opmlUrl + "en_US_BO";
-		}
+			finalOpmlUrl = finalOpmlUrl + "zh_CN";
+		} else if (lang == UiLanguage.Russian) {
+			finalOpmlUrl = finalOpmlUrl + "ru_RU";
+		} else if (lang == UiLanguage.Ukrainian) {
+			finalOpmlUrl = finalOpmlUrl + "uk_UA";
+		} 
 		Log.v(LOGTAG, "OPML Feed Url: " + finalOpmlUrl);
 		
 		if (isOnline() == ONLINE && settings.lastOPMLCheckTime() < System.currentTimeMillis() - opmlCheckFrequency) {
@@ -618,23 +622,27 @@ public class SocialReader implements ICacheWordSubscriber
 	{
 		Log.v(LOGTAG,"backgroundSyncSubscribedFeeds()");
 
-		final ArrayList<Feed> feeds = getSubscribedFeedsList();
-		for (Feed feed : feeds)
-		{
-			Log.v(LOGTAG,"Checking " + feed.getTitle());
-			if (shouldRefresh(feed) && isOnline() == ONLINE) {
-				Log.v(LOGTAG,"Going to request " + feed.getTitle());
-				backgroundRequestFeedNetwork(feed, new SyncServiceFeedFetchedCallback() {
-					@Override
-					public void feedFetched(Feed _feed) {
-						Log.v(LOGTAG,"Finished fecthing: " + _feed.getTitle());
-					}
-				});
-			} else if (isOnline() != ONLINE) {
-				Log.v(LOGTAG,feed.getTitle() + " not refreshing, not online: " + isOnline());
-			} else {
-				Log.v(LOGTAG,feed.getTitle() + " doesn't need refreshing");
+		if (!cacheWord.isLocked()) {
+			final ArrayList<Feed> feeds = getSubscribedFeedsList();
+			for (Feed feed : feeds)
+			{
+				Log.v(LOGTAG,"Checking " + feed.getTitle());
+				if (shouldRefresh(feed) && isOnline() == ONLINE) {
+					Log.v(LOGTAG,"Going to request " + feed.getTitle());
+					backgroundRequestFeedNetwork(feed, new SyncServiceFeedFetchedCallback() {
+						@Override
+						public void feedFetched(Feed _feed) {
+							Log.v(LOGTAG,"Finished fecthing: " + _feed.getTitle());
+						}
+					});
+				} else if (isOnline() != ONLINE) {
+					Log.v(LOGTAG,feed.getTitle() + " not refreshing, not online: " + isOnline());
+				} else {
+					Log.v(LOGTAG,feed.getTitle() + " doesn't need refreshing");
+				}
 			}
+		} else {
+			Log.v(LOGTAG, "Can't sync feeds, cacheword locked");
 		}
 	}
 
@@ -823,6 +831,8 @@ public class SocialReader implements ICacheWordSubscriber
 			}
 						
 			loadOPMLFile();
+		} else {
+			Log.v(LOGTAG,"Database not empty, not inserting default feeds");
 		}
 
 		Log.v(LOGTAG,"databaseAdapter initialized");
